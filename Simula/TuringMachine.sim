@@ -1,0 +1,123 @@
+begin
+    class TuringMachine;
+
+    ! Declare necessary variables and types;
+    integer headPosition;
+    character tape[1:100]; ! Assuming the tape length is 100 for simplicity;
+    text currentState;
+    ref(TransitionTable) transitionTable;
+
+    ! Define a class to represent a transition;
+    class TransitionClass;
+    begin
+        character writeSymbol;
+        integer moveDirection; ! -1 for left, 1 for right;
+        text nextState;
+
+        procedure init(symbol; dir; state);
+        character symbol;
+        integer dir;
+        text state;
+        begin
+            writeSymbol := symbol;
+            moveDirection := dir;
+            nextState := state;
+        end init;
+
+    end TransitionClass;
+
+    ! Define a class for the transition table;
+    class TransitionTable;
+    begin
+        ref(TransitionClass) transitions[1:10, 1:10];
+
+        procedure addTransition(state; symbol; newSymbol; direction; newState);
+        text state, newState;
+        character symbol, newSymbol;
+        integer direction;
+        integer i, j;
+        begin
+            ! Map state and symbol to indices;
+            i := ord(state.sub(1, 1)) mod 10;
+            j := ord(symbol) mod 10;
+            transitions[i, j] := new TransitionClass;
+            transitions[i, j].init(newSymbol, direction, newState);
+        end addTransition;
+
+        ref(TransitionClass) getTransition(state; symbol);
+        text state;
+        character symbol;
+        integer i, j;
+        begin
+            ! Map state and symbol to indices;
+            i := ord(state.sub(1, 1)) mod 10;
+            j := ord(symbol) mod 10;
+            getTransition := transitions[i, j];
+        end getTransition;
+    end TransitionTable;
+
+    ! Initialize the Turing machine;
+    procedure initMachine(initialTape; initialState);
+    text initialTape, initialState;
+    integer i;
+    begin
+        headPosition := 1;
+        currentState := initialState;
+        ! Initialize the tape with the initial values;
+        for i := 1 step 1 until length(initialTape) do
+            tape[i] := initialTape.sub(i, 1);
+        od;
+    end initMachine;
+
+    ! Execute one step of the Turing machine;
+    procedure step;
+    ref(TransitionClass) transition;
+    begin
+        transition := transitionTable.getTransition(currentState, tape[headPosition]);
+        if transition /= none then
+            tape[headPosition] := transition.writeSymbol;
+            headPosition := headPosition + transition.moveDirection;
+            currentState := transition.nextState;
+        else
+            currentState := "HALT";
+        fi;
+    end step;
+
+    ! Run the Turing machine until it halts;
+    procedure runMachine;
+    begin
+        while currentState /= "HALT" do
+            outtext("Tape: ");
+            for integer i := 1 step 1 until 100 do
+                outchar(tape[i]);
+            od;
+            outimage;
+
+            outtext("Head Position: ");
+            outint(headPosition, 0);
+            outimage;
+
+            outtext("Current State: ");
+            outtext(currentState);
+            outimage;
+
+            step;
+        od;
+    end runMachine;
+
+    ! Create the transition table and define transitions;
+    transitionTable :- new TransitionTable;
+    transitionTable.addTransition("q0", '1', '1', 1, "q0");
+    transitionTable.addTransition("q0", '0', '0', 1, "q1");
+    transitionTable.addTransition("q0", '_', '_', -1, "HALT");
+    transitionTable.addTransition("q1", '1', '0', -1, "q1");
+    transitionTable.addTransition("q1", '0', '1', -1, "q0");
+    transitionTable.addTransition("q1", '_', '_', 1, "HALT");
+
+    ! Initialize the Turing machine and run it;
+    ref(TuringMachine) machine;
+    machine :- new TuringMachine;
+    machine.initMachine("101__", "q0");
+    machine.runMachine;
+
+end;
