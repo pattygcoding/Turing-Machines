@@ -1,0 +1,55 @@
+# Define the tape with some initial input
+tape = ['1', '1', '0', '1']  # Initial input
+head = 1                     # Initial head position
+state = "q0"                 # Initial state
+
+# Define the transition table
+transitions = Dict(
+    ("q0", '1') => ("q1", '1', 1),  # On state q0 and reading '1' -> move to q1, write '1', move right
+    ("q0", '0') => ("q2", '1', 1),  # On state q0 and reading '0' -> move to q2, write '1', move right
+    ("q1", '1') => ("q0", '1', 1),  # On state q1 and reading '1' -> move to q0, write '1', move right
+    ("q1", '0') => ("q1", '1', 1),  # On state q1 and reading '0' -> stay in q1, write '1', move right
+    ("q2", '1') => ("q2", '1', 1),  # On state q2 and reading '1' -> stay in q2, write '1', move right
+    ("q2", '0') => ("HALT", '0', 0) # On state q2 and reading '0' -> halt
+)
+
+# Function to run the Turing machine
+function run_machine()
+    global state, head, tape
+    while true
+        # Get the current symbol on the tape
+        symbol = head <= length(tape) ? tape[head] : '0'
+
+        # Determine the action based on the current state and symbol
+        action = get(transitions, (state, symbol), nothing)
+
+        # If no action is defined, halt the machine
+        if action === nothing
+            println("No valid transition found. Halting.")
+            break
+        end
+
+        # Apply the action
+        state, new_symbol, direction = action
+        if head <= length(tape)
+            tape[head] = new_symbol
+        else
+            push!(tape, new_symbol)
+        end
+        head += direction
+
+        # Output the current state of the tape and head position
+        println("State: $state, Tape: ", join(tape), ", Head: $head")
+
+        # Halt if we reach the HALT state
+        if state == "HALT"
+            break
+        end
+    end
+
+    # Output the final tape
+    println("Final Tape: ", join(tape))
+end
+
+# Start the Turing machine
+run_machine()
