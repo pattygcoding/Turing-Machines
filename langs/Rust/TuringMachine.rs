@@ -1,49 +1,35 @@
-use std::collections::HashMap;
+use std::io::{self, BufRead};
 
 fn main() {
-    // Define the tape with some initial input
-    let mut tape: Vec<char> = vec!['1', '1', '0', '1']; // Initial input
-    let mut head: usize = 0;                           // Initial head position
-    let mut state = "q0".to_string();                  // Initial state
+    let stdin = io::stdin();
+    let mut raw = String::new();
+    let _ = stdin.lock().read_line(&mut raw);
+    let line = raw.trim_end_matches(['\r', '\n']).to_string();
 
-    // Define the transition table
-    let mut transitions: HashMap<(&str, char), (&str, char, isize)> = HashMap::new();
-    transitions.insert(("q0", '1'), ("q1", '1', 1));
-    transitions.insert(("q0", '0'), ("q2", '1', 1));
-    transitions.insert(("q1", '1'), ("q0", '1', 1));
-    transitions.insert(("q1", '0'), ("q1", '1', 1));
-    transitions.insert(("q2", '1'), ("q2", '1', 1));
-    transitions.insert(("q2", '0'), ("HALT", '0', 0));
-
-    // Function to run the Turing machine
-    while state != "HALT" {
-        // Get the current symbol on the tape
-        let symbol = if head < tape.len() { tape[head] } else { '0' };
-
-        // Determine the action based on the current state and symbol
-        let action = transitions.get(&(state.as_str(), symbol));
-
-        // If no action is defined, halt the machine
-        if action.is_none() {
-            println!("No valid transition found. Halting.");
-            break;
-        }
-
-        let (new_state, new_symbol, direction) = action.unwrap();
-
-        // Apply the action
-        state = new_state.to_string();
-        if head < tape.len() {
-            tape[head] = *new_symbol;
-        } else {
-            tape.push(*new_symbol);
-        }
-        head = (head as isize + direction) as usize;
-
-        // Output the current state of the tape and head position
-        println!("State: {}, Tape: {}, Head: {}", state, tape.iter().collect::<String>(), head);
+    if line.chars().any(|character| character != '0' && character != '1') {
+        println!("Invalid input: expected a binary string.");
+        return;
     }
 
-    // Output the final tape
-    println!("Final Tape: {}", tape.iter().collect::<String>());
+    // The canonical machine: a binary incrementer.  In q0 a 1 is rewritten to
+    // 0 and the head moves left (carry); a 0 becomes 1 and the machine halts;
+    // a blank becomes 1 (a new leading digit) and the machine halts.
+    let mut tape: Vec<char> = line.chars().collect();
+    let mut head: isize = tape.len() as isize - 1;
+    loop {
+        let symbol = if head >= 0 { tape[head as usize] } else { '_' };
+        if symbol == '1' {
+            tape[head as usize] = '0';
+            head -= 1;
+        } else if symbol == '0' {
+            tape[head as usize] = '1';
+            break;
+        } else {
+            tape.insert(0, '1');
+            break;
+        }
+    }
+
+    println!("Initial tape: {}", line);
+    println!("Final tape: {}", tape.into_iter().collect::<String>());
 }

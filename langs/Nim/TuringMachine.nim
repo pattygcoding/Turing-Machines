@@ -1,29 +1,33 @@
-import strutils
+import std/strutils
 
-var tape: seq[char] = @['1', '1', '0', '1']
-var head = 0
-var state = "q0"
+# The canonical machine: a binary incrementer.  Reading the tape from the
+# right, every 1 becomes a 0 (carry); the first 0 becomes a 1 and the carry
+# stops; if the carry runs off the tape a new leading 1 is added.
+proc increment(line: string): string =
+    var index = line.len - 1
+    while index >= 0:
+        if line[index] == '1':
+            dec index
+        else:
+            return line[0 ..< index] & '1' & repeat('0', line.len - index - 1)
+    '1' & repeat('0', line.len)
 
-proc determineAction(state: string, symbol: char): tuple[state: string, writeSymbol: char, direction: int] =
-    case (state, symbol)
-    of ("q0", '1'): ("q1", '1', 1)
-    of ("q0", '0'): ("q2", '1', 1)
-    of ("q1", '1'): ("q0", '1', 1)
-    of ("q1", '0'): ("q1", '1', 1)
-    of ("q2", '1'): ("q2", '1', 1)
-    of ("q2", '0'): ("HALT", '0', 0)
-    else: ("HALT", '0', 0)
+proc main() =
+    var line = ""
+    try:
+        line = stdin.readLine()
+    except EOFError:
+        line = ""
+    if line.len > 0 and line[^1] == '\r':
+        line.setLen(line.len - 1)
 
-while state != "HALT":
-    let symbol = if head < tape.len: tape[head] else: '0'
-    let action = determineAction(state, symbol)
-    state = action.state
-    if head < tape.len:
-        tape[head] = action.writeSymbol
-    else:
-        tape.add(action.writeSymbol)
-    head += action.direction
+    for character in line:
+        if character != '0' and character != '1':
+            echo "Invalid input: expected a binary string."
+            return
 
-    echo "State: ", state, ", Tape: ", tape.join(""), ", Head: ", head
+    echo "Initial tape: " & line
+    echo "Final tape: " & increment(line)
 
-echo "Final Tape: ", tape.join("")
+when isMainModule:
+    main()

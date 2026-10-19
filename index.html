@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Turing Machines Multi-Language Showcase</title>
+    <!-- The site's canonical address.  Every path the dashboard builds is derived
+         from the directory it is served from (`APP_DIR` in src/store/session.ts),
+         so this is declarative only. -->
+    <link rel="canonical" href="https://turing.pattygcoding.com/" />
+    <!-- Relative, so the favicon follows whatever prefix the site is served under
+         (the custom domain, the repo path, or a local preview). -->
+    <link rel="icon" type="image/png" href="./logo.png" />
+    <meta name="description" content="One Turing machine implemented in 41 languages, all producing byte-for-byte identical output. Browse the source for Ada, Assembly, C, C#, C++, COBOL, Haskell, Python, Rust, Zig and every language in between." />
+    <!-- Link previews (LinkedIn, Facebook, Slack...) need absolute URLs. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Turing Machines Multi-Language Showcase" />
+    <meta property="og:title" content="Turing Machines Multi-Language Showcase" />
+    <meta property="og:description" content="One Turing machine implemented in 41 languages, all producing byte-for-byte identical output. Browse the source for Ada, Assembly, C, C#, C++, COBOL, Haskell, Python, Rust, Zig and every language in between." />
+    <meta property="og:url" content="https://turing.pattygcoding.com/" />
+    <meta property="og:image" content="https://turing.pattygcoding.com/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A Turing machine tape with the title Turing Machines Multi-Language Showcase." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Turing Machines Multi-Language Showcase" />
+    <meta name="twitter:description" content="One Turing machine implemented in 41 languages, all producing byte-for-byte identical output. Browse the source and the verified console captures." />
+    <meta name="twitter:image" content="https://turing.pattygcoding.com/og-image.png" />
+    <script>
+        // Choose the theme before first paint so there is no flash of the wrong palette.
+        // The app only mirrors this attribute afterwards (src/store/theme.ts).
+        (function () {
+            var stored = null;
+            try { stored = localStorage.getItem("tm-theme"); } catch (error) { stored = null; }
+            var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+            document.documentElement.setAttribute("data-theme", stored || (prefersLight ? "light" : "dark"));
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <!-- Both Prism themes are loaded; the unused one is parked behind media="not all". -->
+    <link id="prism-dark" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link id="prism-light" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" media="not all" />
+</head>
+<body class="bg-ink-950 text-fg font-sans antialiased">
+    <div id="app"></div>
+
+    <!-- The showcase data, generated from the real repository by `npm run data`
+         (tools/generate_dashboard.py).  A classic script, so it runs before the app
+         module below and the app needs no fetch. -->
+    <script src="./dashboard-data.js"></script>
+    <!-- Prism.js core + autoloader (loads a grammar on demand for any language) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" data-manual></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

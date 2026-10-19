@@ -1,45 +1,34 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Define the tape with some initial input
-tape=("1" "1" "0" "1")  # Initial input
-head=0                  # Initial head position
-state="q0"              # Initial state
+# The canonical machine: a binary incrementer.  In q0 a 1 is rewritten to 0 and
+# the head moves left (carry); a 0 becomes 1 and the machine halts; a blank
+# becomes 1 (a new leading digit) and the machine halts.
+IFS= read -r line || line=""
 
-# Function to determine the action based on the current state and symbol
-determine_action() {
-    local state_symbol="$1_$2"
-    case $state_symbol in
-        "q0_1") echo "q1 1 1" ;;
-        "q0_0") echo "q2 1 1" ;;
-        "q1_1") echo "q0 1 1" ;;
-        "q1_0") echo "q1 1 1" ;;
-        "q2_1") echo "q2 1 1" ;;
-        "q2_0") echo "HALT 0 0" ;;
-        *) echo "HALT 0 0" ;;
-    esac
-}
+case "$line" in
+    *[!01]*)
+        printf '%s\n' "Invalid input: expected a binary string."
+        exit 0
+        ;;
+esac
 
-# Main loop to run the Turing machine
+tape="$line"
+head=$(( ${#tape} - 1 ))
+
 while true; do
-    # Get the current symbol on the tape
-    symbol="${tape[$head]:-0}"
-
-    # Determine the action
-    action=$(determine_action "$state" "$symbol")
-    read -r state write_symbol direction <<< "$action"
-
-    # Apply the action
-    tape[$head]=$write_symbol
-    ((head += direction))
-
-    # Output the current state of the tape and head position
-    echo "State: $state, Tape: ${tape[*]}, Head: $head"
-
-    # Halt if the state is HALT
-    if [ "$state" == "HALT" ]; then
+    if [ "$head" -lt 0 ]; then
+        tape="1$tape"
+        break
+    fi
+    symbol="${tape:$head:1}"
+    if [ "$symbol" = "1" ]; then
+        tape="${tape:0:$head}0${tape:$((head + 1))}"
+        head=$(( head - 1 ))
+    else
+        tape="${tape:0:$head}1${tape:$((head + 1))}"
         break
     fi
 done
 
-# Output the final tape
-echo "Final Tape: ${tape[*]}"
+printf 'Initial tape: %s\n' "$line"
+printf 'Final tape: %s\n' "$tape"

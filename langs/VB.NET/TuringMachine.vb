@@ -1,64 +1,40 @@
+Imports System
+Imports System.Text
+
 Module TuringMachine
-
     Sub Main()
-        Dim tape As Char() = {"1"c, "1"c, "0"c, "1"c}  ' Initial input on the tape
-        Dim head As Integer = 0                        ' Initial head position
-        Dim state As String = "q0"                     ' Initial state
+        Dim line As String = Console.ReadLine()
+        If line Is Nothing Then
+            line = ""
+        End If
 
-        ' Function to determine the action based on the current state and symbol
-        While state <> "HALT"
-            Dim symbol As Char = If(head < tape.Length, tape(head), "0"c)
-
-            Dim newState As String = ""
-            Dim writeSymbol As Char = ""
-            Dim direction As Integer = 0
-
-            Select Case state & "_" & symbol
-                Case "q0_1"
-                    newState = "q1"
-                    writeSymbol = "1"c
-                    direction = 1
-                Case "q0_0"
-                    newState = "q2"
-                    writeSymbol = "1"c
-                    direction = 1
-                Case "q1_1"
-                    newState = "q0"
-                    writeSymbol = "1"c
-                    direction = 1
-                Case "q1_0"
-                    newState = "q1"
-                    writeSymbol = "1"c
-                    direction = 1
-                Case "q2_1"
-                    newState = "q2"
-                    writeSymbol = "1"c
-                    direction = 1
-                Case "q2_0"
-                    newState = "HALT"
-                    writeSymbol = "0"c
-                    direction = 0
-                Case Else
-                    newState = "HALT"
-                    writeSymbol = "0"c
-                    direction = 0
-            End Select
-
-            state = newState
-            If head < tape.Length Then
-                tape(head) = writeSymbol
-            Else
-                Array.Resize(tape, tape.Length + 1)
-                tape(tape.Length - 1) = writeSymbol
+        For Each character As Char In line
+            If character <> "0"c AndAlso character <> "1"c Then
+                Console.WriteLine("Invalid input: expected a binary string.")
+                Return
             End If
-            head += direction
+        Next
 
-            ' Output the current state of the tape and head position
-            Console.WriteLine($"State: {state}, Tape: {New String(tape)}, Head: {head}")
-        End While
+        ' The canonical machine: a binary incrementer.  In q0 a 1 is rewritten
+        ' to 0 and the head moves left (carry); a 0 becomes 1 and the machine
+        ' halts; a blank becomes 1 (a new leading digit) and the machine halts.
+        Dim tape As New StringBuilder(line)
+        Dim head As Integer = tape.Length - 1
+        Do
+            Dim symbol As Char = If(head >= 0, tape(head), "_"c)
+            If symbol = "1"c Then
+                tape(head) = "0"c
+                head -= 1
+            ElseIf symbol = "0"c Then
+                tape(head) = "1"c
+                Exit Do
+            Else
+                tape.Insert(0, "1"c)
+                Exit Do
+            End If
+        Loop
 
-        ' Output the final tape
-        Console.WriteLine($"Final Tape: {New String(tape)}")
+        Console.WriteLine("Initial tape: " & line)
+        Console.WriteLine("Final tape: " & tape.ToString())
     End Sub
-
 End Module

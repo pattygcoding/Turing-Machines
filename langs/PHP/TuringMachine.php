@@ -1,65 +1,35 @@
 <?php
-class TuringMachine {
-    private $tape;
-    private $head;
-    private $state;
 
-    public function __construct($input) {
-        // Initialize the tape with input and extra spaces on both sides
-        $this->tape = str_split("  " . $input . "  ");
-        $this->head = 2; // Start at the first character of the input
-        $this->state = "q0"; // Initial state
-    }
+$line = fgets(STDIN);
+if ($line === false) {
+    $line = "";
+}
+$line = rtrim($line, "\r\n");
 
-    public function execute() {
-        while ($this->state !== "accept" && $this->state !== "reject") {
-            $currentSymbol = $this->tape[$this->head];
+if (strspn($line, "01") !== strlen($line)) {
+    echo "Invalid input: expected a binary string.\n";
+    exit(0);
+}
 
-            switch ($this->state) {
-                case "q0":
-                    if ($currentSymbol === 'a') {
-                        $this->tape[$this->head] = 'X';
-                        $this->head++;
-                        $this->state = "q1";
-                    } elseif ($currentSymbol === ' ') {
-                        $this->state = "accept";
-                    } else {
-                        $this->state = "reject";
-                    }
-                    break;
+// The canonical machine: a binary incrementer.  In q0 a 1 is rewritten to 0 and
+// the head moves left (carry); a 0 becomes 1 and the machine halts; a blank
+// becomes 1 (a new leading digit) and the machine halts.
+$tape = $line === "" ? [] : str_split($line);
+$head = count($tape) - 1;
 
-                case "q1":
-                    if ($currentSymbol === 'a' || $currentSymbol === 'X') {
-                        $this->head++;
-                    } elseif ($currentSymbol === 'b') {
-                        $this->tape[$this->head] = 'Y';
-                        $this->head++;
-                        $this->state = "q2";
-                    } else {
-                        $this->state = "reject";
-                    }
-                    break;
-
-                case "q2":
-                    if ($currentSymbol === 'b' || $currentSymbol === 'Y') {
-                        $this->head++;
-                    } elseif ($currentSymbol === ' ') {
-                        $this->state = "accept";
-                    } else {
-                        $this->state = "reject";
-                    }
-                    break;
-            }
-        }
-
-        if ($this->state === "accept") {
-            echo "Input is accepted by the Turing Machine.\n";
-        } else {
-            echo "Input is rejected by the Turing Machine.\n";
-        }
+while (true) {
+    $symbol = $head >= 0 ? $tape[$head] : "_";
+    if ($symbol === "1") {
+        $tape[$head] = "0";
+        $head--;
+    } elseif ($symbol === "0") {
+        $tape[$head] = "1";
+        break;
+    } else {
+        array_unshift($tape, "1");
+        break;
     }
 }
 
-$input = "aabb";
-$tm = new TuringMachine($input);
-$tm->execute();
+echo "Initial tape: " . $line . "\n";
+echo "Final tape: " . implode("", $tape) . "\n";

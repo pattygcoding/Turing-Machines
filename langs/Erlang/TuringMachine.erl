@@ -1,29 +1,28 @@
--module(turing_machine).
--export([execute/1]).
+-module('TuringMachine').
 
--record(tm, {tape, head = 2, state = q0}).
+-export([main/0]).
 
-new(Input) ->
-    #tm{tape = lists:concat(["  ", Input, "  "])}.
-
-execute(#tm{tape = Tape, head = Head, state = State} = TM) ->
-    case State of
-        accept -> io:format("Input is accepted by the Turing Machine.~n");
-        reject -> io:format("Input is rejected by the Turing Machine.~n");
-        _ ->
-            CurrentSymbol = lists:nth(Head, Tape),
-            TM1 = case {State, CurrentSymbol} of
-                {q0, $a} ->
-                    TM#tm{tape = set_element(Head, Tape, $X), head = Head + 1, state = q1};
-                {q0, $\s} -> TM#tm{state = accept};
-                {q1, $a} -> TM#tm{head = Head + 1};
-                {q1, $X} -> TM#tm{head = Head + 1};
-                {q1, $b} ->
-                    TM#tm{tape = set_element(Head, Tape, $Y), head = Head + 1, state = q2};
-                {q2, $b} -> TM#tm{head = Head + 1};
-                {q2, $Y} -> TM#tm{head = Head + 1};
-                {q2, $\s} -> TM#tm{state = accept};
-                _ -> TM#tm{state = reject}
-            end,
-            execute(TM1)
+main() ->
+    Line = read_line(),
+    case lists:any(fun(Character) -> Character =/= $0 andalso Character =/= $1 end, Line) of
+        true ->
+            io:format("Invalid input: expected a binary string.~n");
+        false ->
+            Result = lists:reverse(increment(lists:reverse(Line))),
+            io:format("Initial tape: ~s~n", [Line]),
+            io:format("Final tape: ~s~n", [Result])
     end.
+
+read_line() ->
+    case io:get_line("") of
+        eof -> "";
+        {error, _} -> "";
+        Data -> string:trim(Data, trailing, "\r\n")
+    end.
+
+%% The canonical machine: a binary incrementer.  Reading the tape from the
+%% right, every 1 becomes a 0 (carry); the first 0 becomes a 1 and the carry
+%% stops; if the carry runs off the tape a new leading 1 is added.
+increment([]) -> [$1];
+increment([$1 | Rest]) -> [$0 | increment(Rest)];
+increment([_ | Rest]) -> [$1 | Rest].

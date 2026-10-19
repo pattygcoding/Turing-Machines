@@ -1,74 +1,31 @@
--- Define a type for the tape, which is a list of symbols.
-type Tape = [Char]
+module Main where
 
--- Define a type for the state of the Turing machine.
-type State = String
+import Data.List (isPrefixOf)
 
--- Define a type for the head position, which is an integer.
-type HeadPosition = Int
+-- The canonical machine: a binary incrementer.  Reading the tape from the
+-- right, every 1 becomes a 0 (carry); the first 0 becomes a 1 and the carry
+-- stops; if the carry runs off the tape a new leading 1 is added.
+increment :: String -> String
+increment bits = reverse (go (reverse bits))
+  where
+    go [] = "1"
+    go ('1' : rest) = '0' : go rest
+    go (_ : rest) = '1' : rest
 
--- Define a type for the transition function, which maps a (state, symbol) pair to a new state, a symbol to write, and a direction to move.
-type TransitionFunction = ((State, Char) -> (State, Char, Direction))
-
--- Define a data type for the direction to move the head.
-data Direction = L | R deriving (Eq, Show)
-
--- Define the Turing Machine data type.
-data TuringMachine = TuringMachine {
-    tape :: Tape,
-    headPos :: HeadPosition,
-    currentState :: State,
-    transitionFunction :: TransitionFunction
-}
-
--- A function to move the head in the specified direction.
-moveHead :: HeadPosition -> Direction -> HeadPosition
-moveHead pos L = pos - 1
-moveHead pos R = pos + 1
-
--- A function to execute one step of the Turing machine.
-step :: TuringMachine -> TuringMachine
-step tm@(TuringMachine tape pos state tf) =
-    let
-        currentSymbol = tape !! pos
-        (newState, newSymbol, direction) = tf (state, currentSymbol)
-        newTape = take pos tape ++ [newSymbol] ++ drop (pos + 1) tape
-        newPos = moveHead pos direction
-    in
-        TuringMachine newTape newPos newState tf
-
--- A function to run the Turing machine until it halts.
-run :: TuringMachine -> IO ()
-run tm@(TuringMachine tape pos state tf)
-    | state == "HALT" = putStrLn "Halting." >> print tape
-    | otherwise = do
-        print tm
-        run (step tm)
-
--- Overriding the `Show` instance to print the TuringMachine in a more readable format.
-instance Show TuringMachine where
-    show (TuringMachine tape pos state _) =
-        "Tape: " ++ show tape ++ "\n" ++
-        "Head Position: " ++ show pos ++ "\n" ++
-        "Current State: " ++ state ++ "\n"
-
--- The main function to define the tape, transition function, and run the machine.
 main :: IO ()
 main = do
-    -- Define the tape
-    let initialTape = "101__"
+    input <- getContents
+    let line = stripCarriageReturn (takeWhile (/= '\n') input)
+    if not (all isBit line)
+        then putStrLn "Invalid input: expected a binary string."
+        else do
+            putStrLn ("Initial tape: " ++ line)
+            putStrLn ("Final tape: " ++ increment line)
 
-    -- Define the transition function
-    let tf ("q0", '1') = ("q0", '1', R)
-        tf ("q0", '0') = ("q1", '0', R)
-        tf ("q0", '_') = ("HALT", '_', L)
-        tf ("q1", '1') = ("q1", '0', L)
-        tf ("q1", '0') = ("q0", '1', L)
-        tf ("q1", '_') = ("HALT", '_', R)
-        tf _           = ("HALT", '_', R)
+isBit :: Char -> Bool
+isBit character = character == '0' || character == '1'
 
-    -- Create the initial Turing machine
-    let tm = TuringMachine initialTape 0 "q0" tf
-
-    -- Run the Turing machine
-    run tm
+stripCarriageReturn :: String -> String
+stripCarriageReturn text
+    | "\r" `isPrefixOf` reverse text = reverse (drop 1 text)
+    | otherwise = text

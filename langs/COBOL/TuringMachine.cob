@@ -1,67 +1,73 @@
-       IDENTIFICATION DIVISION.
-       PROGRAM-ID. TuringMachine.
+IDENTIFICATION DIVISION.
+PROGRAM-ID. TURINGMACHINE.
 
-       DATA DIVISION.
-       WORKING-STORAGE SECTION.
-       01 TAPE.
-           05 TAPE-ENTRY PIC X(10) VALUE '1101      '.
-       01 HEAD            PIC 9(2) VALUE 1.
-       01 STATE           PIC X(2) VALUE 'q0'.
-       01 SYMBOL          PIC X(1).
-       01 TRANSITION-KEY  PIC X(4).
-       01 NEXT-STATE      PIC X(2).
-       01 WRITE-SYMBOL    PIC X(1).
-       01 DIRECTION       PIC S9(2).
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-LINE          PIC X(256).
+01 WS-LENGTH        PIC 9(4) COMP.
+01 WS-INDEX         PIC S9(4) COMP.
+01 WS-HEAD          PIC S9(4) COMP.
+01 WS-OUT-LEN       PIC 9(4) COMP.
+01 WS-CARRY         PIC X.
+01 WS-INVALID       PIC X.
+01 WS-CHAR          PIC X.
+01 WS-TAPE          PIC X(258).
 
-       PROCEDURE DIVISION.
-       MAIN-PROCESS.
-           PERFORM UNTIL STATE = 'HALT'
-               MOVE TAPE-ENTRY(HEAD:1) TO SYMBOL
-               MOVE STATE TO TRANSITION-KEY(1:2)
-               MOVE SYMBOL TO TRANSITION-KEY(3:1)
-               PERFORM DETERMINE-ACTION
-               IF NEXT-STATE = '    '
-                   DISPLAY 'No valid transition found. Halting.'
-                   MOVE 'HALT' TO STATE
-               ELSE
-                   MOVE NEXT-STATE TO STATE
-                   MOVE WRITE-SYMBOL TO TAPE-ENTRY(HEAD:1)
-                   ADD DIRECTION TO HEAD
-                   DISPLAY 'State: ' STATE ', Tape: ' TAPE-ENTRY ', Head: ' HEAD
-               END-IF
-           END-PERFORM
-           DISPLAY 'Final Tape: ' TAPE-ENTRY
-           STOP RUN.
+PROCEDURE DIVISION.
+    ACCEPT WS-LINE
 
-       DETERMINE-ACTION.
-           EVALUATE TRANSITION-KEY
-               WHEN 'q0' '1'
-                   MOVE 'q1' TO NEXT-STATE
-                   MOVE '1' TO WRITE-SYMBOL
-                   MOVE 1 TO DIRECTION
-               WHEN 'q0' '0'
-                   MOVE 'q2' TO NEXT-STATE
-                   MOVE '1' TO WRITE-SYMBOL
-                   MOVE 1 TO DIRECTION
-               WHEN 'q1' '1'
-                   MOVE 'q0' TO NEXT-STATE
-                   MOVE '1' TO WRITE-SYMBOL
-                   MOVE 1 TO DIRECTION
-               WHEN 'q1' '0'
-                   MOVE 'q1' TO NEXT-STATE
-                   MOVE '1' TO WRITE-SYMBOL
-                   MOVE 1 TO DIRECTION
-               WHEN 'q2' '1'
-                   MOVE 'q2' TO NEXT-STATE
-                   MOVE '1' TO WRITE-SYMBOL
-                   MOVE 1 TO DIRECTION
-               WHEN 'q2' '0'
-                   MOVE 'HALT' TO NEXT-STATE
-                   MOVE '0' TO WRITE-SYMBOL
-                   MOVE 0 TO DIRECTION
-               WHEN OTHER
-                   MOVE '    ' TO NEXT-STATE
-                   MOVE ' ' TO WRITE-SYMBOL
-                   MOVE 0 TO DIRECTION
-           END-EVALUATE.
-       END PROGRAM TuringMachine.
+    MOVE 256 TO WS-LENGTH
+    PERFORM UNTIL WS-LENGTH = 0
+        IF WS-LINE(WS-LENGTH:1) = SPACE OR WS-LINE(WS-LENGTH:1) = X"0D"
+            SUBTRACT 1 FROM WS-LENGTH
+        ELSE
+            EXIT PERFORM
+        END-IF
+    END-PERFORM
+
+    MOVE 'N' TO WS-INVALID
+    PERFORM VARYING WS-INDEX FROM 1 BY 1 UNTIL WS-INDEX > WS-LENGTH
+        MOVE WS-LINE(WS-INDEX:1) TO WS-CHAR
+        IF WS-CHAR NOT = '0' AND WS-CHAR NOT = '1'
+            MOVE 'Y' TO WS-INVALID
+            EXIT PERFORM
+        END-IF
+    END-PERFORM
+
+    IF WS-INVALID = 'Y'
+        DISPLAY "Invalid input: expected a binary string."
+        STOP RUN
+    END-IF
+
+    MOVE SPACES TO WS-TAPE
+    IF WS-LENGTH > 0
+        MOVE WS-LINE(1:WS-LENGTH) TO WS-TAPE(2:WS-LENGTH)
+    END-IF
+
+    MOVE 'Y' TO WS-CARRY
+    COMPUTE WS-HEAD = WS-LENGTH + 1
+    PERFORM UNTIL WS-CARRY = 'N' OR WS-HEAD < 2
+        IF WS-TAPE(WS-HEAD:1) = '1'
+            MOVE '0' TO WS-TAPE(WS-HEAD:1)
+            SUBTRACT 1 FROM WS-HEAD
+        ELSE
+            MOVE '1' TO WS-TAPE(WS-HEAD:1)
+            MOVE 'N' TO WS-CARRY
+        END-IF
+    END-PERFORM
+
+    IF WS-LENGTH = 0
+        DISPLAY "Initial tape: "
+    ELSE
+        DISPLAY "Initial tape: " WS-LINE(1:WS-LENGTH)
+    END-IF
+
+    IF WS-CARRY = 'Y'
+        MOVE '1' TO WS-TAPE(1:1)
+        COMPUTE WS-OUT-LEN = WS-LENGTH + 1
+        DISPLAY "Final tape: " WS-TAPE(1:WS-OUT-LEN)
+    ELSE
+        DISPLAY "Final tape: " WS-TAPE(2:WS-LENGTH)
+    END-IF
+
+    STOP RUN.

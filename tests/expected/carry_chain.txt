@@ -1,0 +1,2 @@
+Initial tape: 1111
+Final tape: 10000

@@ -1,0 +1,108 @@
+# ==========================================================================
+# Turing Machines - ignore rules
+#
+# Tracked in this repository: every language's source
+# (langs/<Language>/TuringMachine.<ext>), the test suite (tests/inputs,
+# tests/expected, tests/run_tests.py),
+# the .NET project files, the Vue showcase (src/, public/, configs) and the
+# generator scripts (tools/).  Everything below is build output, generated data
+# or tool/editor cruft.
+# ==========================================================================
+
+# --- Showcase app (Vue + Vite) -------------------------------------------
+# dist/ is the GitHub Pages artifact and public/dashboard-data.js is generated
+# by tools/generate_dashboard.py, so neither is ever committed.
+node_modules/
+dist/
+public/dashboard-data.js
+.vite/
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# --- Master test suite ---------------------------------------------------
+# Every compiled program and JVM/CLR bundle the runner builds lands here.
+tests/build/
+
+# --- Python (showcase generator + test runner) ---------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.venv/
+venv/
+
+# --- .NET (C#, F#, VB.NET) ----------------------------------------------
+# dotnet build writes these beside each project; the .csproj/.fsproj/.vbproj
+# files themselves are source and stay tracked.
+**/bin/
+**/obj/
+
+# --- JVM (Java, Kotlin, Scala, Clojure, Groovy) --------------------------
+*.class
+*.jar
+.gradle/
+.bsp/
+.bloop/
+.metals/
+.scala-build/
+
+# --- BEAM (Erlang, Elixir) ------------------------------------------------
+*.beam
+erl_crash.dump
+_build/
+deps/
+
+# --- Nim, Zig, Dart -------------------------------------------------------
+nimcache/
+.zig-cache/
+zig-out/
+.dart_tool/
+
+# --- Native compilers (C, C++, COBOL, Fortran, Ada, Pascal, Assembly, ...) -
+# ocamlopt and gnatmake drop .cmi/.cmx/.o/.ali/.ppu next to the source; the
+# other compilers only do so when run without -o, which the runner avoids.
+*.o
+*.obj
+*.exe
+*.dll
+*.pdb
+*.exp
+*.lib
+*.a
+*.ali
+*.ppu
+*.cmi
+*.cmx
+*.cmo
+*.cmt
+*.cmti
+*.annot
+*.hi
+*.dyn_o
+*.dyn_hi
+*.mod
+*.dSYM/
+
+# --- Haskell (Stack/cabal) and Rust (cargo) -------------------------------
+.stack-work/
+dist-newstyle/
+target/
+
+# --- Editors and OS cruft -------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.tmp
+*.orig
+*.rej
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini

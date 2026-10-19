@@ -1,0 +1,2 @@
+Initial tape: 0
+Final tape: 1

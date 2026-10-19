@@ -1,63 +1,56 @@
+import sys
+
+BLANK = "_"
+
+
 class TuringMachine:
-    def __init__(self, input_string):
-        # Initialize the tape with input and add extra space on both sides
-        self.tape = list(" " * 100 + input_string + " " * 100)
-        self.head = 100  # Start at the middle of the tape
-        self.state = "q0"  # Initial state
+    def __init__(self, bits):
+        # The tape starts as the input bits; the head starts on the last bit.
+        self.tape = list(bits)
+        self.head = len(self.tape) - 1
+        self.state = "q0"
 
-    def execute(self):
-        while self.state not in ["accept", "reject"]:
-            current_symbol = self.tape[self.head]
+    def read(self):
+        # A cell beyond the left end of the tape is blank.
+        return self.tape[self.head] if self.head >= 0 else BLANK
 
-            if self.state == "q0":
-                if current_symbol == 'a':
-                    self.tape[self.head] = 'X'
-                    self.head += 1
-                    self.state = "q1"
-                elif current_symbol == ' ':
-                    self.state = "accept"
-                else:
-                    self.state = "reject"
+    def write(self, symbol):
+        self.tape[self.head] = symbol
 
-            elif self.state == "q1":
-                if current_symbol in ['a', 'X']:
-                    self.head += 1
-                elif current_symbol == 'b':
-                    self.tape[self.head] = 'Y'
-                    self.head += 1
-                    self.state = "q2"
-                else:
-                    self.state = "reject"
+    def run(self):
+        # The canonical machine: a binary incrementer.  In q0 a 1 is rewritten
+        # to 0 and the head moves left (carry); a 0 becomes 1 and the machine
+        # halts; a blank becomes 1 (a new leading digit) and the machine halts.
+        while self.state != "halt":
+            symbol = self.read()
+            if symbol == "1":
+                self.write("0")
+                self.head -= 1
+            elif symbol == "0":
+                self.write("1")
+                self.state = "halt"
+            else:
+                self.tape.insert(0, "1")
+                self.state = "halt"
+        return "".join(self.tape)
 
-            elif self.state == "q2":
-                if current_symbol in ['b', 'Y']:
-                    self.head += 1
-                elif current_symbol == 'c':
-                    self.tape[self.head] = 'Z'
-                    self.head -= 1
-                    self.state = "q3"
-                else:
-                    self.state = "reject"
 
-            elif self.state == "q3":
-                if current_symbol in ['b', 'Y']:
-                    self.head -= 1
-                elif current_symbol == 'X':
-                    self.head += 1
-                    self.state = "q0"
-                else:
-                    self.state = "reject"
+def read_line():
+    line = sys.stdin.readline()
+    if line == "":
+        return ""
+    return line.rstrip("\n").rstrip("\r")
 
-        if self.state == "accept":
-            print("Input is accepted by the Turing Machine.")
-        elif self.state == "reject":
-            print("Input is rejected by the Turing Machine.")
 
-    def print_tape(self):
-        print(''.join(self.tape).strip())
+def main():
+    line = read_line()
+    if any(bit not in "01" for bit in line):
+        print("Invalid input: expected a binary string.")
+        return
+    machine = TuringMachine(line)
+    print("Initial tape: " + line)
+    print("Final tape: " + machine.run())
+
 
 if __name__ == "__main__":
-    input_string = "aabbcc"
-    tm = TuringMachine(input_string)
-    tm.execute()
-    tm.print_tape()
+    main()

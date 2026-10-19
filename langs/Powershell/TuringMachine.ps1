@@ -1,36 +1,34 @@
-$tape = @('1', '1', '0', '1')  # Initial input on the tape
-$head = 0                      # Initial head position
-$state = 'q0'                  # Initial state
+$ErrorActionPreference = "Stop"
 
-function Determine-Action {
-    param ($state, $symbol)
+$line = [Console]::In.ReadLine()
+if ($null -eq $line) { $line = "" }
 
-    switch ("$state`_$symbol") {
-        'q0_1' { return 'q1', '1', 1 }
-        'q0_0' { return 'q2', '1', 1 }
-        'q1_1' { return 'q0', '1', 1 }
-        'q1_0' { return 'q1', '1', 1 }
-        'q2_1' { return 'q2', '1', 1 }
-        'q2_0' { return 'HALT', '0', 0 }
-        default { return 'HALT', '0', 0 }
+if ($line -notmatch '^[01]*$') {
+    Write-Output "Invalid input: expected a binary string."
+    exit 0
+}
+
+# The tape starts as the input bits; the head starts on the last bit.
+$tape = New-Object System.Collections.Generic.List[char]
+foreach ($character in $line.ToCharArray()) { $tape.Add($character) }
+$head = $tape.Count - 1
+
+# The canonical machine: a binary incrementer.  In q0 a 1 is rewritten to 0 and
+# the head moves left (carry); a 0 becomes 1 and the machine halts; a blank
+# becomes 1 (a new leading digit) and the machine halts.
+while ($true) {
+    $symbol = if ($head -ge 0) { [string]$tape[$head] } else { "_" }
+    if ($symbol -eq "1") {
+        $tape[$head] = [char]"0"
+        $head -= 1
+    } elseif ($symbol -eq "0") {
+        $tape[$head] = [char]"1"
+        break
+    } else {
+        $tape.Insert(0, [char]"1")
+        break
     }
 }
 
-# Main loop to run the Turing machine
-while ($true) {
-    $symbol = if ($head -lt $tape.Length) { $tape[$head] } else { '0' }
-
-    $result = Determine-Action -state $state -symbol $symbol
-    $state, $writeSymbol, $direction = $result
-
-    $tape[$head] = $writeSymbol
-    $head += $direction
-
-    # Output the current state of the tape and head position
-    Write-Output "State: $state, Tape: $($tape -join ''), Head: $head"
-
-    if ($state -eq 'HALT') { break }
-}
-
-# Output the final tape
-Write-Output "Final Tape: $($tape -join '')"
+Write-Output ("Initial tape: " + $line)
+Write-Output ("Final tape: " + (-join $tape))

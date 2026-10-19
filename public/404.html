@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turing Machines Multi-Language Showcase</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-content: center;
+            justify-items: center;
+            gap: 0.75rem;
+            background: #05070c;
+            color: #8debc4;
+            font: 400 14px/1.6 ui-monospace, "JetBrains Mono", monospace;
+        }
+        a { color: #8debc4; }
+    </style>
+</head>
+<body>
+    <p>Opening the Turing Machines showcase&hellip;</p>
+    <p><a id="fallback" href="./">Continue to the showcase</a></p>
+    <noscript><p>This link needs JavaScript; open the showcase root instead.</p></noscript>
+    <script>
+        // GitHub Pages serves this file for any path it cannot find, *without* changing
+        // the address bar - which is what makes the dashboard's own links (/python, /c,
+        // /objectivec) work when they are opened directly.  The request is rebuilt as
+        // the query-string shape index.html reads on load, and the page then writes the
+        // pretty path back into the bar with the History API.
+        (function () {
+            var parts = window.location.pathname.replace(/\/+$/, "").split("/");
+            var last = parts.pop() || "";
+            // A trailing tab segment names the tab explicitly; the dashboard works
+            // out whether that item even has it and falls back to its code if not.
+            var tab = last === "output" || last === "code" || last === "source" ? last : "";
+            if (tab === "source") { tab = "code"; }
+            if (tab) { last = parts.pop() || ""; }
+            // A language id is a bare slug (its folder name, lowercased).  Anything
+            // else - a missing .html, a directory - is junk, so drop one more level
+            // and keep climbing towards the deployment root instead of bouncing back
+            // here for ever.
+            // Slugs are lowercase, so a hand-typed /Python still lands on /python.
+            var slug = /^[a-z0-9][a-z0-9_-]*$/i.test(last) ? last.toLowerCase() : "";
+            if (!slug) { parts.pop(); }
+            // Anything else the link carried (?scenario=…, most importantly) has to
+            // survive the trip, so the dashboard can put the exact address back in
+            // the bar.
+            var params = new URLSearchParams(window.location.search || "");
+            params.delete("lang");
+            if (tab) { params.set("tab", tab); }
+            var target = parts.join("/") + "/index.html";
+            if (slug) { target += "?lang=" + encodeURIComponent(slug); }
+            var query = params.toString();
+            if (query) { target += (slug ? "&" : "?") + query; }
+            document.getElementById("fallback").href = target;
+            // Same favicon as the dashboard.  It has to be built from the path we just
+            // climbed (a plain relative href would resolve against a deep junk path),
+            // so the icon shows while this page is on screen.
+            var icon = document.createElement("link");
+            icon.rel = "icon";
+            icon.type = "image/png";
+            icon.href = parts.join("/") + "/logo.png";
+            document.head.appendChild(icon);
+            // Hard stops, so a path that cannot resolve (a typo above the deployment
+            // root) shows the link rather than redirecting in circles: at most four
+            // hops, and never re-request the address we are already on.  The dashboard
+            // clears the counter as soon as it loads, so the next bad link is free to
+            // try again.
+            var hops = 0;
+            try {
+                hops = Number(sessionStorage.getItem("tm-404") || "0") + 1;
+                sessionStorage.setItem("tm-404", String(hops));
+            } catch (error) { hops = 0; }
+            if (hops > 4 || target === window.location.pathname + window.location.search) { return; }
+            window.location.replace(target);
+        })();
+    </script>
+</body>
+</html>

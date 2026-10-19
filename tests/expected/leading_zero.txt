@@ -1,0 +1,2 @@
+Initial tape: 00101
+Final tape: 00110

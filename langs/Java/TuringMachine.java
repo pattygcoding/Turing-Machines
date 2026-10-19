@@ -1,94 +1,43 @@
-import java.util.Arrays;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
-class TuringMachine {
-    private char[] tape;
-    private int head;
-    private String state;
+public class TuringMachine {
+    public static void main(String[] args) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        String line = reader.readLine();
+        if (line == null) {
+            line = "";
+        }
 
-    public TuringMachine(String input) {
-        // Initialize the tape with the input and extra space on both sides
-        tape = new char[300];
-        Arrays.fill(tape, ' ');
-        System.arraycopy(input.toCharArray(), 0, tape, 100, input.length());
-        head = 100; // Start at the middle of the tape
-        state = "q0"; // Initial state
-    }
-
-    public void execute() {
-        while (!state.equals("accept") && !state.equals("reject")) {
-            char currentSymbol = tape[head];
-            switch (state) {
-                case "q0":
-                    if (currentSymbol == 'a') {
-                        tape[head] = 'X';
-                        head++;
-                        state = "q1";
-                    } else if (currentSymbol == ' ') {
-                        state = "q_accept";
-                    } else {
-                        state = "q_reject";
-                    }
-                    break;
-
-                case "q1":
-                    if (currentSymbol == 'a' || currentSymbol == 'X') {
-                        head++;
-                    } else if (currentSymbol == 'b') {
-                        tape[head] = 'Y';
-                        head++;
-                        state = "q2";
-                    } else {
-                        state = "q_reject";
-                    }
-                    break;
-
-                case "q2":
-                    if (currentSymbol == 'b' || currentSymbol == 'Y') {
-                        head++;
-                    } else if (currentSymbol == 'c') {
-                        tape[head] = 'Z';
-                        head--;
-                        state = "q3";
-                    } else {
-                        state = "q_reject";
-                    }
-                    break;
-
-                case "q3":
-                    if (currentSymbol == 'b' || currentSymbol == 'Y') {
-                        head--;
-                    } else if (currentSymbol == 'X') {
-                        head++;
-                        state = "q0";
-                    } else {
-                        state = "q_reject";
-                    }
-                    break;
-
-                case "q_accept":
-                    System.out.println("Input is accepted by the Turing Machine.");
-                    state = "accept";
-                    break;
-
-                case "q_reject":
-                    System.out.println("Input is rejected by the Turing Machine.");
-                    state = "reject";
-                    break;
-
-                default:
-                    state = "q_reject";
+        for (int index = 0; index < line.length(); index++) {
+            char character = line.charAt(index);
+            if (character != '0' && character != '1') {
+                System.out.println("Invalid input: expected a binary string.");
+                return;
             }
         }
-    }
 
-    public void printTape() {
-        System.out.println(new String(tape).trim());
-    }
+        // The canonical machine: a binary incrementer.  In q0 a 1 is rewritten
+        // to 0 and the head moves left (carry); a 0 becomes 1 and the machine
+        // halts; a blank becomes 1 (a new leading digit) and the machine halts.
+        StringBuilder tape = new StringBuilder(line);
+        int head = tape.length() - 1;
+        while (true) {
+            char symbol = head >= 0 ? tape.charAt(head) : '_';
+            if (symbol == '1') {
+                tape.setCharAt(head, '0');
+                head -= 1;
+            } else if (symbol == '0') {
+                tape.setCharAt(head, '1');
+                break;
+            } else {
+                tape.insert(0, '1');
+                break;
+            }
+        }
 
-    public static void main(String[] args) {
-        String input = "aabbcc";
-        TuringMachine tm = new TuringMachine(input);
-        tm.execute();
-        tm.printTape();
+        System.out.println("Initial tape: " + line);
+        System.out.println("Final tape: " + tape);
     }
 }

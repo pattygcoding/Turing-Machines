@@ -1,71 +1,187 @@
-section .data
-    tape db "aabb  " ; Tape with input string and extra spaces
-    head dd 0       ; Head position
-    state db 0      ; State (0 = q0, 1 = q1, 2 = q_accept, 3 = q_reject)
+; The canonical machine: a binary incrementer, written directly against the
+; Win32 API (no C runtime), so nasm -f win32 + a 32-bit MinGW can link it.
 
-section .text
-    global _start
+    section .data
+initial_label:      db "Initial tape: "
+initial_label_len   equ $ - initial_label
+final_label:        db "Final tape: "
+final_label_len     equ $ - final_label
+invalid_message:    db "Invalid input: expected a binary string.", 10
+invalid_len         equ $ - invalid_message
+newline:            db 10
 
-_start:
-    mov esi, tape   ; ESI points to the tape
-    mov [head], esi ; Set the initial head position
+    section .bss
+input_buffer:       resb 512
+tape_buffer:        resb 1024
+output_buffer:      resb 4096
+bytes_io:           resd 1
 
-state_q0:
-    mov al, [esi]   ; Load the current symbol under the head
-    cmp al, 'a'
-    je found_a_q0
-    cmp al, ' '
-    je accept
-    jmp reject
+    section .text
+    extern _GetStdHandle@4
+    extern _ReadFile@20
+    extern _WriteFile@20
+    global _main
 
-found_a_q0:
-    mov byte [esi], 'X' ; Mark the 'a' as processed
-    inc esi             ; Move the head to the right
-    jmp state_q1
+; Copy ecx bytes from esi into output_buffer + edx (edi is the buffer base).
+copy_bytes:
+    test ecx, ecx
+    jz .copy_done
+.copy_loop:
+    mov al, [esi]
+    mov [edi + edx], al
+    inc esi
+    inc edx
+    dec ecx
+    jnz .copy_loop
+.copy_done:
+    ret
 
-state_q1:
-    mov al, [esi]   ; Load the current symbol under the head
-    cmp al, 'a'
-    je found_a_q1
-    cmp al, 'b'
-    je found_b_q1
-    jmp reject
+_main:
+    push ebp
+    mov ebp, esp
+    push ebx
+    push esi
+    push edi
+    sub esp, 12                  ; [ebp-16] start, [ebp-20] final len, [ebp-24] line len
 
-found_a_q1:
-    inc esi        ; Move the head to the right
-    jmp state_q1   ; Stay in state q1
+    push dword -10
+    call _GetStdHandle@4
+    mov ebx, eax
 
-found_b_q1:
-    mov byte [esi], 'Y' ; Mark the 'b' as processed
-    inc esi             ; Move the head to the right
-    jmp state_q0        ; Return to state q0 to continue processing
+    lea esi, [input_buffer]
+    mov byte [esi], 0
 
-accept:
-    ; Code to handle the accept state
-    mov eax, 4            ; sys_write
-    mov ebx, 1            ; file descriptor (stdout)
-    mov ecx, accept_msg
-    mov edx, accept_msg_len
-    int 0x80              ; Make syscall
-    jmp done
+    push dword 0
+    push bytes_io
+    push dword 511
+    push esi
+    push ebx
+    call _ReadFile@20
 
-reject:
-    ; Code to handle the reject state
-    mov eax, 4            ; sys_write
-    mov ebx, 1            ; file descriptor (stdout)
-    mov ecx, reject_msg
-    mov edx, reject_msg_len
-    int 0x80              ; Make syscall
-    jmp done
+    mov ecx, [bytes_io]
+    xor edx, edx
+.find_newline:
+    cmp edx, ecx
+    jae .strip_cr
+    mov al, [esi + edx]
+    cmp al, 10
+    je .strip_cr
+    inc edx
+    jmp .find_newline
+.strip_cr:
+    test edx, edx
+    jz .validate
+    mov al, [esi + edx - 1]
+    cmp al, 13
+    jne .validate
+    dec edx
 
-done:
-    mov eax, 1            ; sys_exit
-    xor ebx, ebx          ; status 0
-    int 0x80              ; Make syscall
+.validate:
+    mov [ebp - 24], edx
+    xor ecx, ecx
+.validate_loop:
+    cmp ecx, edx
+    jae .run
+    mov al, [esi + ecx]
+    cmp al, '0'
+    je .validate_next
+    cmp al, '1'
+    je .validate_next
+    jmp .invalid
+.validate_next:
+    inc ecx
+    jmp .validate_loop
 
-section .data
-accept_msg db "Input is accepted by the Turing Machine.", 10
-accept_msg_len equ $-accept_msg
+.invalid:
+    push dword -11
+    call _GetStdHandle@4
+    mov ebx, eax
+    push dword 0
+    push bytes_io
+    push dword invalid_len
+    push invalid_message
+    push ebx
+    call _WriteFile@20
+    jmp .done
 
-reject_msg db "Input is rejected by the Turing Machine.", 10
-reject_msg_len equ $-reject_msg
+.run:
+    lea edi, [tape_buffer]
+    xor ecx, ecx
+.copy_tape:
+    cmp ecx, edx
+    jae .carry
+    mov al, [esi + ecx]
+    mov [edi + ecx + 1], al
+    inc ecx
+    jmp .copy_tape
+
+.carry:
+    mov ecx, edx
+.carry_loop:
+    test ecx, ecx
+    jz .prepend
+    mov al, [edi + ecx]
+    cmp al, '1'
+    jne .write_one
+    mov byte [edi + ecx], '0'
+    dec ecx
+    jmp .carry_loop
+.write_one:
+    mov byte [edi + ecx], '1'
+    mov dword [ebp - 16], 1
+    mov [ebp - 20], edx
+    jmp .emit
+.prepend:
+    mov byte [edi], '1'
+    mov dword [ebp - 16], 0
+    mov eax, edx
+    inc eax
+    mov [ebp - 20], eax
+
+.emit:
+    lea edi, [output_buffer]
+    xor edx, edx
+
+    lea esi, [initial_label]
+    mov ecx, initial_label_len
+    call copy_bytes
+
+    lea esi, [input_buffer]
+    mov ecx, [ebp - 24]
+    call copy_bytes
+
+    lea esi, [newline]
+    mov ecx, 1
+    call copy_bytes
+
+    lea esi, [final_label]
+    mov ecx, final_label_len
+    call copy_bytes
+
+    mov esi, tape_buffer
+    add esi, [ebp - 16]
+    mov ecx, [ebp - 20]
+    call copy_bytes
+
+    lea esi, [newline]
+    mov ecx, 1
+    call copy_bytes
+
+    push dword -11
+    call _GetStdHandle@4
+    mov ebx, eax
+    push dword 0
+    push bytes_io
+    push edx
+    push edi
+    push ebx
+    call _WriteFile@20
+
+.done:
+    xor eax, eax
+    add esp, 12
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp
+    ret

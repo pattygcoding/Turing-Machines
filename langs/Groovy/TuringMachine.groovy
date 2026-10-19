@@ -1,64 +1,31 @@
-class TuringMachine {
-    String[] tape
-    int head
-    String state
+def line = System.in.newReader().readLine()
+if (line == null) {
+    line = ""
+}
+line = line.replaceAll(/[\r\n]+$/, "")
 
-    TuringMachine(String input) {
-        // Initialize the tape with the input and extra spaces
-        this.tape = ("  " + input + "  ").toCharArray()
-        this.head = 2 // Start at the first character of the input
-        this.state = "q0" // Initial state
-    }
-
-    void execute() {
-        while (state != "accept" && state != "reject") {
-            char currentSymbol = tape[head]
-
-            switch (state) {
-                case "q0":
-                    if (currentSymbol == 'a') {
-                        tape[head] = 'X'
-                        head++
-                        state = "q1"
-                    } else if (currentSymbol == ' ') {
-                        state = "accept"
-                    } else {
-                        state = "reject"
-                    }
-                    break
-
-                case "q1":
-                    if (currentSymbol == 'a' || currentSymbol == 'X') {
-                        head++
-                    } else if (currentSymbol == 'b') {
-                        tape[head] = 'Y'
-                        head++
-                        state = "q2"
-                    } else {
-                        state = "reject"
-                    }
-                    break
-
-                case "q2":
-                    if (currentSymbol == 'b' || currentSymbol == 'Y') {
-                        head++
-                    } else if (currentSymbol == ' ') {
-                        state = "accept"
-                    } else {
-                        state = "reject"
-                    }
-                    break
-            }
-        }
-
-        if (state == "accept") {
-            println "Input is accepted by the Turing Machine."
-        } else {
-            println "Input is rejected by the Turing Machine."
-        }
-    }
+if (line.find(/[^01]/)) {
+    println "Invalid input: expected a binary string."
+    return
 }
 
-def input = "aabb"
-def tm = new TuringMachine(input)
-tm.execute()
+// The canonical machine: a binary incrementer.  In q0 a 1 is rewritten to 0 and
+// the head moves left (carry); a 0 becomes 1 and the machine halts; a blank
+// becomes 1 (a new leading digit) and the machine halts.
+def characters = line.toList()
+int index = characters.size() - 1
+while (index >= 0) {
+    if (characters[index] == "1") {
+        characters[index] = "0"
+        index--
+    } else {
+        characters[index] = "1"
+        break
+    }
+}
+if (index < 0) {
+    characters.add(0, "1")
+}
+
+println "Initial tape: ${line}"
+println "Final tape: ${characters.join()}"

@@ -1,34 +1,24 @@
-(* Define the tape with some initial input *)
-let tape = ref ['1'; '1'; '0'; '1']  (* Initial input on the tape *)
-let head = ref 0                     (* Initial head position *)
-let state = ref "q0"                 (* Initial state *)
+(* The canonical machine: a binary incrementer.  Reading the tape from the
+   right, every 1 becomes a 0 (carry); the first 0 becomes a 1 and the carry
+   stops; if the carry runs off the tape a new leading 1 is added. *)
+let increment bits =
+  let rec go = function
+    | [] -> [ '1' ]
+    | '1' :: rest -> '0' :: go rest
+    | _ :: rest -> '1' :: rest
+  in
+  List.rev (go (List.rev bits))
 
-(* Function to determine the action based on the current state and symbol *)
-let determine_action state symbol =
-  match (state, symbol) with
-  | ("q0", '1') -> ("q1", '1', 1)
-  | ("q0", '0') -> ("q2", '1', 1)
-  | ("q1", '1') -> ("q0", '1', 1)
-  | ("q1", '0') -> ("q1", '1', 1)
-  | ("q2", '1') -> ("q2", '1', 1)
-  | ("q2", '0') -> ("HALT", '0', 0)
-  | _ -> ("HALT", '0', 0)
+let read_line () =
+  try input_line stdin with End_of_file -> ""
 
-(* Function to run the Turing machine *)
-let rec run_machine () =
-  if !state <> "HALT" then (
-    let symbol = if !head < List.length !tape then List.nth !tape !head else '0' in
-    let (new_state, write_symbol, direction) = determine_action !state symbol in
-    state := new_state;
-    if !head < List.length !tape then
-      tape := List.mapi (fun i x -> if i = !head then write_symbol else x) !tape
-    else
-      tape := !tape @ [write_symbol];
-    head := !head + direction;
-    Printf.printf "State: %s, Tape: %s, Head: %d\n" !state (String.concat "" (List.map (String.make 1) !tape)) !head;
-    run_machine ()
-  ) else
-    Printf.printf "Final Tape: %s\n" (String.concat "" (List.map (String.make 1) !tape))
-
-(* Start the Turing machine *)
-let () = run_machine ()
+let () =
+  let line = read_line () in
+  if String.exists (fun character -> character <> '0' && character <> '1') line then
+    print_endline "Invalid input: expected a binary string."
+  else begin
+    let bits = List.of_seq (String.to_seq line) in
+    let result = String.of_seq (List.to_seq (increment bits)) in
+    print_endline ("Initial tape: " ^ line);
+    print_endline ("Final tape: " ^ result)
+  end

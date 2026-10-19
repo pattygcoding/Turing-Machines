@@ -1,29 +1,26 @@
-(defn turing-machine [input]
-  (loop [tape (vec (str "  " input "  "))
-         head 2
-         state :q0]
-    (let [current-symbol (tape head)]
-      (cond
-        (= state :accept) (println "Input is accepted by the Turing Machine.")
-        (= state :reject) (println "Input is rejected by the Turing Machine.")
-        :else
-        (recur
-          (case [state current-symbol]
-            [:q0 \a] (assoc tape head \X)
-            [:q1 \b] (assoc tape head \Y)
-            tape)
-          (case [state current-symbol]
-            [:q0 \a] (inc head)
-            [:q1 \a] (inc head)
-            [:q1 \X] (inc head)
-            [:q2 \b] (inc head)
-            [:q2 \Y] (inc head)
-            head)
-          (case [state current-symbol]
-            [:q0 \a] :q1
-            [:q0 \space] :accept
-            [:q1 \b] :q2
-            [:q2 \space] :accept
-            state))))))
+(require '[clojure.string :as str])
 
-(turing-machine "aabb")
+;; The canonical machine: a binary incrementer.  Reading the tape from the
+;; right, every 1 becomes a 0 (carry); the first 0 becomes a 1 and the carry
+;; stops; if the carry runs off the tape a new leading 1 is added.
+(defn increment [bits]
+  (let [reversed (reverse bits)]
+    (reverse
+     (loop [remaining reversed
+            result []]
+       (if (empty? remaining)
+         (conj result \1)
+         (if (= (first remaining) \1)
+           (recur (rest remaining) (conj result \0))
+           (into (conj result \1) (rest remaining))))))))
+
+(defn -main [& _]
+  (let [line (or (read-line) "")
+        line (str/replace line #"[\r\n]+$" "")]
+    (if (some #(and (not= % \0) (not= % \1)) line)
+      (println "Invalid input: expected a binary string.")
+      (do
+        (println (str "Initial tape: " line))
+        (println (str "Final tape: " (apply str (increment line))))))))
+
+(-main)

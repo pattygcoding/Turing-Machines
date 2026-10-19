@@ -1,86 +1,51 @@
-PROGRAM TuringMachine
-  IMPLICIT NONE
+program TuringMachine
+    implicit none
 
-  CHARACTER(LEN=10) :: tape = "1101      "  ! Initial tape
-  INTEGER :: head = 1                       ! Initial head position
-  CHARACTER(LEN=2) :: state = "q0"          ! Initial state
-  CHARACTER(LEN=1) :: symbol                ! Current symbol
-  CHARACTER(LEN=4) :: transitionKey         ! Transition key
-  CHARACTER(LEN=2) :: nextState             ! Next state
-  CHARACTER(LEN=1) :: writeSymbol           ! Symbol to write
-  INTEGER :: direction                      ! Direction to move (-1 for left, +1 for right)
+    character(len=512) :: line
+    character(len=512) :: tape
+    integer :: length
+    integer :: index
+    integer :: head
+    integer :: status
+    logical :: carry
 
-  ! Main loop to run the Turing machine
-  DO
-    symbol = tape(head:head)
+    line = ' '
+    read (*, '(A)', iostat=status) line
+    if (status /= 0) line = ' '
+    length = len_trim(line)
+    if (length > 0) then
+        if (line(length:length) == char(13)) length = length - 1
+    end if
 
-    ! Construct the transition key
-    transitionKey = TRIM(ADJUSTL(state)) // TRIM(ADJUSTL(symbol))
+    do index = 1, length
+        if (line(index:index) /= '0' .and. line(index:index) /= '1') then
+            print '(A)', 'Invalid input: expected a binary string.'
+            stop
+        end if
+    end do
 
-    ! Determine the action based on the current state and symbol
-    CALL DetermineAction(transitionKey, nextState, writeSymbol, direction)
+    ! The canonical machine: a binary incrementer.  Cell 1 is the spare blank
+    ! used when the carry runs off the left end of the tape.
+    tape = repeat(' ', 512)
+    if (length > 0) tape(2:length + 1) = line(1:length)
 
-    ! Check if the action is valid
-    IF (TRIM(ADJUSTL(nextState)) == "HALT" .OR. TRIM(ADJUSTL(nextState)) == "") THEN
-      PRINT *, "No valid transition found or HALT state reached. Halting."
-      EXIT
-    END IF
+    carry = .true.
+    head = length + 1
+    do while (carry .and. head >= 2)
+        if (tape(head:head) == '1') then
+            tape(head:head) = '0'
+            head = head - 1
+        else
+            tape(head:head) = '1'
+            carry = .false.
+        end if
+    end do
 
-    ! Apply the action
-    state = nextState
-    tape(head:head) = writeSymbol
-    head = head + direction
-
-    ! Print the current state of the tape and head position
-    PRINT *, "State: ", TRIM(ADJUSTL(state)), ", Tape: ", TRIM(ADJUSTL(tape)), ", Head: ", head
-
-    ! Halt if the state is HALT
-    IF (TRIM(ADJUSTL(state)) == "HALT") EXIT
-  END DO
-
-  ! Print the final tape
-  PRINT *, "Final Tape: ", TRIM(ADJUSTL(tape))
-
-CONTAINS
-
-  ! Subroutine to determine the action based on the transition key
-  SUBROUTINE DetermineAction(transitionKey, nextState, writeSymbol, direction)
-    CHARACTER(LEN=4), INTENT(IN) :: transitionKey
-    CHARACTER(LEN=2), INTENT(OUT) :: nextState
-    CHARACTER(LEN=1), INTENT(OUT) :: writeSymbol
-    INTEGER, INTENT(OUT) :: direction
-
-    ! Initialize the output variables
-    nextState = "    "
-    writeSymbol = " "
-    direction = 0
-
-    SELECT CASE (TRIM(ADJUSTL(transitionKey)))
-    CASE ("q01")
-      nextState = "q1"
-      writeSymbol = "1"
-      direction = 1
-    CASE ("q00")
-      nextState = "q2"
-      writeSymbol = "1"
-      direction = 1
-    CASE ("q11")
-      nextState = "q0"
-      writeSymbol = "1"
-      direction = 1
-    CASE ("q10")
-      nextState = "q1"
-      writeSymbol = "1"
-      direction = 1
-    CASE ("q21")
-      nextState = "q2"
-      writeSymbol = "1"
-      direction = 1
-    CASE ("q20")
-      nextState = "HALT"
-      writeSymbol = "0"
-      direction = 0
-    END SELECT
-  END SUBROUTINE DetermineAction
-
-END PROGRAM TuringMachine
+    print '(A,A)', 'Initial tape: ', line(1:length)
+    if (carry) then
+        tape(1:1) = '1'
+        print '(A,A)', 'Final tape: ', tape(1:length + 1)
+    else
+        print '(A,A)', 'Final tape: ', tape(2:length + 1)
+    end if
+end program TuringMachine

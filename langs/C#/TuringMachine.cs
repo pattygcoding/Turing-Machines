@@ -1,108 +1,47 @@
 using System;
-using System.Collections.Generic;
-
-class Transition
-{
-    public int CurrentState { get; set; }
-    public char ReadSymbol { get; set; }
-    public char WriteSymbol { get; set; }
-    public char Direction { get; set; } // 'L' for left, 'R' for right
-    public int NextState { get; set; }
-
-    public Transition(int currentState, char readSymbol, char writeSymbol, char direction, int nextState)
-    {
-        CurrentState = currentState;
-        ReadSymbol = readSymbol;
-        WriteSymbol = writeSymbol;
-        Direction = direction;
-        NextState = nextState;
-    }
-}
+using System.Text;
 
 class TuringMachine
 {
-    private const int TAPE_SIZE = 100;
-    private const int HALT_STATE = -1;
-
-    private List<Transition> transitions;
-    private char[] tape;
-    private int headPosition;
-    private int currentState;
-
-    public TuringMachine(string input, List<Transition> transitions)
+    static void Main()
     {
-        tape = new char[TAPE_SIZE];
-        Array.Copy(input.ToCharArray(), tape, input.Length);
-        this.transitions = transitions;
-        currentState = 0;
-        headPosition = 0;
-    }
+        string line = Console.ReadLine() ?? "";
 
-    private int FindTransition(int currentState, char readSymbol)
-    {
-        for (int i = 0; i < transitions.Count; i++)
+        foreach (char character in line)
         {
-            if (transitions[i].CurrentState == currentState && transitions[i].ReadSymbol == readSymbol)
+            if (character != '0' && character != '1')
             {
-                return i;
+                Console.WriteLine("Invalid input: expected a binary string.");
+                return;
             }
         }
-        return -1;
-    }
 
-    public void Run()
-    {
-        while (currentState != HALT_STATE)
+        // The canonical machine: a binary incrementer.  In q0 a 1 is rewritten
+        // to 0 and the head moves left (carry); a 0 becomes 1 and the machine
+        // halts; a blank becomes 1 (a new leading digit) and the machine halts.
+        StringBuilder tape = new StringBuilder(line);
+        int head = tape.Length - 1;
+        while (true)
         {
-            char currentSymbol = tape[headPosition];
-            int transitionIndex = FindTransition(currentState, currentSymbol);
-
-            if (transitionIndex == -1)
+            char symbol = head >= 0 ? tape[head] : '_';
+            if (symbol == '1')
             {
-                Console.WriteLine("No valid transition found. Halting...");
+                tape[head] = '0';
+                head -= 1;
+            }
+            else if (symbol == '0')
+            {
+                tape[head] = '1';
                 break;
             }
-
-            Transition transition = transitions[transitionIndex];
-
-            // Perform the transition
-            tape[headPosition] = transition.WriteSymbol;
-            headPosition += (transition.Direction == 'R') ? 1 : -1;
-            currentState = transition.NextState;
-
-            // Prevent the head from moving out of bounds
-            if (headPosition < 0 || headPosition >= TAPE_SIZE)
+            else
             {
-                Console.WriteLine("Tape head moved out of bounds. Halting...");
+                tape.Insert(0, '1');
                 break;
             }
         }
-    }
 
-    public string GetTape()
-    {
-        return new string(tape).TrimEnd('\0');
-    }
-}
-
-class Program
-{
-    static void Main(string[] args)
-    {
-        string input = "0101010101"; // Example input
-
-        // Define the transitions for flipping the bits
-        List<Transition> transitions = new List<Transition>
-        {
-            new Transition(0, '0', '1', 'R', 0),
-            new Transition(0, '1', '0', 'R', 0),
-            new Transition(0, '_', '_', 'R', HALT_STATE) // Halt on blank symbol (assumes '_' as blank)
-        };
-
-        TuringMachine machine = new TuringMachine(input, transitions);
-
-        Console.WriteLine("Initial tape: " + input);
-        machine.Run();
-        Console.WriteLine("Final tape: " + machine.GetTape());
+        Console.WriteLine("Initial tape: " + line);
+        Console.WriteLine("Final tape: " + tape);
     }
 }

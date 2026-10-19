@@ -1,43 +1,34 @@
-#!/usr/bin/perl
 use strict;
 use warnings;
 
-# Define the tape (with some initial input)
-my @tape = split //, "1101";  # Initial input
-my $head = 0;                 # Initial head position
-my $state = 'q0';             # Initial state
+my $line = <STDIN>;
+$line = "" unless defined $line;
+$line =~ s/[\r\n]+\z//;
 
-# Define the transition table
-my %transitions = (
-    'q0_1' => ['q1', '1', 1],  # On state q0 and reading 1 -> move to q1, write 1, move right
-    'q0_0' => ['q2', '1', 1],  # On state q0 and reading 0 -> move to q2, write 1, move right
-    'q1_1' => ['q0', '1', 1],  # On state q1 and reading 1 -> move to q0, write 1, move right
-    'q1_0' => ['q1', '1', 1],  # On state q1 and reading 0 -> stay in q1, write 1, move right
-    'q2_1' => ['q2', '1', 1],  # On state q2 and reading 1 -> stay in q2, write 1, move right
-    'q2_0' => ['HALT', '0', 0],# On state q2 and reading 0 -> halt
-);
-
-# Simulate the Turing machine
-while (1) {
-    # Get the current symbol on the tape
-    my $symbol = $tape[$head] // '0';  # Default to '0' if beyond tape bounds
-
-    # Determine the action based on the current state and symbol
-    my $action = $transitions{"${state}_${symbol}"};
-
-    # If no action is defined, halt the machine
-    last unless $action;
-
-    # Apply the action
-    $state = $action->[0];      # Move to the new state
-    $tape[$head] = $action->[1];# Write the new symbol
-    $head += $action->[2];      # Move the head (left: -1, right: +1)
-
-    # Output the current state of the tape and head position
-    print "State: $state, Tape: ", join('', @tape), ", Head: $head\n";
-
-    # Halt if we reach the HALT state
-    last if $state eq 'HALT';
+if ($line =~ /[^01]/) {
+    print "Invalid input: expected a binary string.\n";
+    exit 0;
 }
 
-print "Final Tape: ", join('', @tape), "\n";
+# The canonical machine: a binary incrementer.  In q0 a 1 is rewritten to 0 and
+# the head moves left (carry); a 0 becomes 1 and the machine halts; a blank
+# becomes 1 (a new leading digit) and the machine halts.
+my @tape = split //, $line;
+my $head = $#tape;
+
+while (1) {
+    my $symbol = $head >= 0 ? $tape[$head] : "_";
+    if ($symbol eq "1") {
+        $tape[$head] = "0";
+        $head -= 1;
+    } elsif ($symbol eq "0") {
+        $tape[$head] = "1";
+        last;
+    } else {
+        unshift @tape, "1";
+        last;
+    }
+}
+
+print "Initial tape: $line\n";
+print "Final tape: ", join("", @tape), "\n";

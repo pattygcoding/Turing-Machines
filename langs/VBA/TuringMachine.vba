@@ -1,62 +1,56 @@
+' VBA has no console stdin, so the tape is read from "input.txt" beside the
+' workbook/module and the two output lines go to the Immediate window
+' (Debug.Print), which is the closest thing VBA has to stdout.
 Sub TuringMachine()
-    Dim tape() As String
-    tape = Split("1 1 0 1", " ") ' Initial input on the tape
-    Dim head As Integer
-    head = 1                    ' Initial head position
-    Dim state As String
-    state = "q0"                ' Initial state
+    Dim line As String
+    Dim handle As Integer
+    handle = FreeFile
+    Open "input.txt" For Input As #handle
+    Line Input #handle, line
+    Close #handle
 
-    ' Define the transition table as a dictionary
-    Dim transitions As Object
-    Set transitions = CreateObject("Scripting.Dictionary")
+    If Not IsBinary(line) Then
+        Debug.Print "Invalid input: expected a binary string."
+        Exit Sub
+    End If
 
-    ' Adding transitions to the dictionary
-    transitions.Add "q0_1", Array("q1", "1", 1)
-    transitions.Add "q0_0", Array("q2", "1", 1)
-    transitions.Add "q1_1", Array("q0", "1", 1)
-    transitions.Add "q1_0", Array("q1", "1", 1)
-    transitions.Add "q2_1", Array("q2", "1", 1)
-    transitions.Add "q2_0", Array("HALT", "0", 0)
+    ' The canonical machine: a binary incrementer.  Reading the tape from the
+    ' right, every 1 becomes a 0 (carry); the first 0 becomes a 1 and the carry
+    ' stops; if the carry runs off the tape a new leading 1 is added.
+    Dim tape As String
+    tape = line
+    Dim index As Long
+    index = Len(tape)
+    Dim carry As Boolean
+    carry = True
 
-    Do While True
-        ' Get the current symbol on the tape
-        Dim symbol As String
-        If head <= UBound(tape) + 1 Then
-            symbol = tape(head - 1)
+    Do While carry And index >= 1
+        If Mid(tape, index, 1) = "1" Then
+            tape = Left(tape, index - 1) & "0" & Mid(tape, index + 1)
+            index = index - 1
         Else
-            symbol = "0"
+            tape = Left(tape, index - 1) & "1" & Mid(tape, index + 1)
+            carry = False
         End If
-
-        ' Create the key for the transition lookup
-        Dim key As String
-        key = state & "_" & symbol
-
-        ' Determine the action based on the current state and symbol
-        If Not transitions.Exists(key) Then
-            Debug.Print "No valid transition found. Halting."
-            Exit Do
-        End If
-
-        Dim action As Variant
-        action = transitions(key)
-
-        ' Apply the action
-        state = action(0)
-        If head <= UBound(tape) + 1 Then
-            tape(head - 1) = action(1)
-        Else
-            ReDim Preserve tape(head - 1)
-            tape(head - 1) = action(1)
-        End If
-        head = head + action(2)
-
-        ' Output the current state of the tape and head position
-        Debug.Print "State: " & state & ", Tape: " & Join(tape, "") & ", Head: " & head
-
-        ' Halt if we reach the HALT state
-        If state = "HALT" Then Exit Do
     Loop
 
-    ' Output the final tape
-    Debug.Print "Final Tape: " & Join(tape, "")
+    If carry Then
+        tape = "1" & tape
+    End If
+
+    Debug.Print "Initial tape: " & line
+    Debug.Print "Final tape: " & tape
 End Sub
+
+Private Function IsBinary(ByVal value As String) As Boolean
+    Dim position As Long
+    For position = 1 To Len(value)
+        Dim character As String
+        character = Mid(value, position, 1)
+        If character <> "0" And character <> "1" Then
+            IsBinary = False
+            Exit Function
+        End If
+    Next position
+    IsBinary = True
+End Function

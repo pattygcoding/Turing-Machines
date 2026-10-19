@@ -1,29 +1,37 @@
+module TuringMachine
+
 open System
+open System.Text
 
-let mutable tape = [| '1'; '1'; '0'; '1' |]  // Initial input on the tape
-let mutable head = 0                         // Initial head position
-let mutable state = "q0"                     // Initial state
+[<EntryPoint>]
+let main _ =
+    let line =
+        match Console.ReadLine() with
+        | null -> ""
+        | value -> value
 
-let determineAction (state: string) (symbol: char) =
-    match state, symbol with
-    | "q0", '1' -> "q1", '1', 1
-    | "q0", '0' -> "q2", '1', 1
-    | "q1", '1' -> "q0", '1', 1
-    | "q1", '0' -> "q1", '1', 1
-    | "q2", '1' -> "q2", '1', 1
-    | "q2", '0' -> "HALT", '0', 0
-    | _ -> "HALT", '0', 0
+    if line |> Seq.exists (fun character -> character <> '0' && character <> '1') then
+        printfn "Invalid input: expected a binary string."
+        0
+    else
+        // The canonical machine: a binary incrementer.  In q0 a 1 is rewritten
+        // to 0 and the head moves left (carry); a 0 becomes 1 and the machine
+        // halts; a blank becomes 1 (a new leading digit) and the machine halts.
+        let tape = StringBuilder(line)
+        let mutable head = tape.Length - 1
+        let mutable halted = false
+        while not halted do
+            let symbol = if head >= 0 then tape.[head] else '_'
+            if symbol = '1' then
+                tape.[head] <- '0'
+                head <- head - 1
+            elif symbol = '0' then
+                tape.[head] <- '1'
+                halted <- true
+            else
+                tape.Insert(0, '1') |> ignore
+                halted <- true
 
-// Main loop to run the Turing machine
-while state <> "HALT" do
-    let symbol = if head < tape.Length then tape.[head] else '0'
-    let (newState, writeSymbol, direction) = determineAction state symbol
-    state <- newState
-    if head < tape.Length then tape.[head] <- writeSymbol else tape <- Array.append tape [| writeSymbol |]
-    head <- head + direction
-
-    // Output the current state of the tape and head position
-    printfn "State: %s, Tape: %s, Head: %d" state (String.Concat tape) head
-
-// Output the final tape
-printfn "Final Tape: %s" (String.Concat tape)
+        printfn "Initial tape: %s" line
+        printfn "Final tape: %s" (tape.ToString())
+        0

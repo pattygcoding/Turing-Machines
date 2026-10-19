@@ -1,46 +1,32 @@
 defmodule TuringMachine do
-  defstruct tape: [], head: 0, state: :q0
+  @moduledoc false
 
-  def new(input) do
-    %TuringMachine{
-      tape: String.graphemes("  " <> input <> "  "),
-      head: 2,
-      state: :q0
-    }
-  end
-
-  def execute(%TuringMachine{tape: tape, head: head, state: state} = tm) do
-    case state do
-      :accept ->
-        IO.puts("Input is accepted by the Turing Machine.")
-      :reject ->
-        IO.puts("Input is rejected by the Turing Machine.")
-      _ ->
-        current_symbol = Enum.at(tape, head)
-        tm = case {state, current_symbol} do
-          {:q0, "a"} ->
-            %TuringMachine{tm | tape: List.replace_at(tape, head, "X"), head: head + 1, state: :q1}
-          {:q0, " "} ->
-            %TuringMachine{tm | state: :accept}
-          {:q1, "a"} ->
-            %TuringMachine{tm | head: head + 1}
-          {:q1, "X"} ->
-            %TuringMachine{tm | head: head + 1}
-          {:q1, "b"} ->
-            %TuringMachine{tm | tape: List.replace_at(tape, head, "Y"), head: head + 1, state: :q2}
-          {:q2, "b"} ->
-            %TuringMachine{tm | head: head + 1}
-          {:q2, "Y"} ->
-            %TuringMachine{tm | head: head + 1}
-          {:q2, " "} ->
-            %TuringMachine{tm | state: :accept}
-          _ ->
-            %TuringMachine{tm | state: :reject}
-        end
-        execute(tm)
-    end
-  end
+  # The canonical machine: a binary incrementer.  Reading the tape from the
+  # right, every 1 becomes a 0 (carry); the first 0 becomes a 1 and the carry
+  # stops; if the carry runs off the tape a new leading 1 is added.
+  def increment([]), do: ["1"]
+  def increment(["1" | rest]), do: ["0" | increment(rest)]
+  def increment([_ | rest]), do: ["1" | rest]
 end
 
-input = "aabb"
-TuringMachine.new(input) |> TuringMachine.execute()
+line =
+  case IO.read(:line) do
+    :eof -> ""
+    {:error, _} -> ""
+    data -> data |> String.trim_trailing("\n") |> String.trim_trailing("\r")
+  end
+
+if String.match?(line, ~r/[^01]/) do
+  IO.puts("Invalid input: expected a binary string.")
+else
+  result =
+    line
+    |> String.graphemes()
+    |> Enum.reverse()
+    |> TuringMachine.increment()
+    |> Enum.reverse()
+    |> Enum.join()
+
+  IO.puts("Initial tape: " <> line)
+  IO.puts("Final tape: " <> result)
+end

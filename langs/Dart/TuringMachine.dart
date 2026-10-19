@@ -1,93 +1,32 @@
-import 'dart:collection';
+import 'dart:io';
 
-class TuringMachine {
-  List<String> tape;
-  int headPosition;
-  String currentState;
-  Map<String, Map<String, Transition>> transitionFunction;
-
-  TuringMachine({
-    required List<String> tape,
-    required String startState,
-    required this.transitionFunction,
-  })  : this.tape = List.from(tape),
-        this.headPosition = 0,
-        this.currentState = startState;
-
-  void run() {
-    while (currentState != 'HALT') {
-      String currentSymbol = tape[headPosition];
-      Transition? transition =
-          transitionFunction[currentState]?[currentSymbol];
-
-      if (transition == null) {
-        print('No transition found. Halting.');
-        break;
-      }
-
-      // Write the new symbol to the tape
-      tape[headPosition] = transition.writeSymbol;
-
-      // Move the head
-      headPosition += transition.moveDirection == 'R' ? 1 : -1;
-
-      // Update the state
-      currentState = transition.nextState;
-
-      // If the head goes off the tape, extend the tape
-      if (headPosition < 0) {
-        tape.insert(0, '_');
-        headPosition = 0;
-      } else if (headPosition >= tape.length) {
-        tape.add('_');
-      }
-
-      // Print the current tape state
-      print('Tape: ${tape.join('')}');
-      print('Head Position: $headPosition');
-      print('Current State: $currentState');
-      print('---');
+// The canonical machine: a binary incrementer.  Reading the tape from the
+// right, every 1 becomes a 0 (carry); the first 0 becomes a 1 and the carry
+// stops; if the carry runs off the tape a new leading 1 is added.
+String increment(String line) {
+  final chars = line.split('');
+  var index = chars.length - 1;
+  while (index >= 0) {
+    if (chars[index] == '1') {
+      chars[index] = '0';
+      index -= 1;
+    } else {
+      chars[index] = '1';
+      return chars.join();
     }
   }
-}
-
-class Transition {
-  final String writeSymbol;
-  final String moveDirection; // 'L' for left, 'R' for right
-  final String nextState;
-
-  Transition({
-    required this.writeSymbol,
-    required this.moveDirection,
-    required this.nextState,
-  });
+  chars.insert(0, '1');
+  return chars.join();
 }
 
 void main() {
-  // Define the tape
-  List<String> tape = ['1', '0', '1', '_', '_'];
+  final line = (stdin.readLineSync() ?? '').replaceAll('\r', '');
 
-  // Define the transition function
-  Map<String, Map<String, Transition>> transitionFunction = {
-    'q0': {
-      '1': Transition(writeSymbol: '1', moveDirection: 'R', nextState: 'q0'),
-      '0': Transition(writeSymbol: '0', moveDirection: 'R', nextState: 'q1'),
-      '_': Transition(writeSymbol: '_', moveDirection: 'L', nextState: 'HALT'),
-    },
-    'q1': {
-      '1': Transition(writeSymbol: '0', moveDirection: 'L', nextState: 'q1'),
-      '0': Transition(writeSymbol: '1', moveDirection: 'L', nextState: 'q0'),
-      '_': Transition(writeSymbol: '_', moveDirection: 'R', nextState: 'HALT'),
-    },
-  };
+  if (line.split('').any((character) => character != '0' && character != '1')) {
+    print('Invalid input: expected a binary string.');
+    return;
+  }
 
-  // Create the Turing machine
-  TuringMachine tm = TuringMachine(
-    tape: tape,
-    startState: 'q0',
-    transitionFunction: transitionFunction,
-  );
-
-  // Run the Turing machine
-  tm.run();
+  print('Initial tape: $line');
+  print('Final tape: ${increment(line)}');
 }

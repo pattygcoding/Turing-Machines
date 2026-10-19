@@ -1,63 +1,28 @@
-class TuringMachine {
-    var tape: [Character]
-    var head: Int
-    var state: String
+import Foundation
 
-    init(input: String) {
-        self.tape = Array("  \(input)  ") // Tape with input string and extra spaces
-        self.head = 2 // Start at the first character of the input
-        self.state = "q0" // Initial state
-    }
+let line = readLine() ?? ""
 
-    func execute() {
-        while state != "accept" && state != "reject" {
-            let currentSymbol = tape[head]
-
-            switch state {
-            case "q0":
-                if currentSymbol == "a" {
-                    tape[head] = "X"
-                    head += 1
-                    state = "q1"
-                } else if currentSymbol == " " {
-                    state = "accept"
-                } else {
-                    state = "reject"
-                }
-
-            case "q1":
-                if currentSymbol == "a" || currentSymbol == "X" {
-                    head += 1
-                } else if currentSymbol == "b" {
-                    tape[head] = "Y"
-                    head += 1
-                    state = "q2"
-                } else {
-                    state = "reject"
-                }
-
-            case "q2":
-                if currentSymbol == "b" || currentSymbol == "Y" {
-                    head += 1
-                } else if currentSymbol == " " {
-                    state = "accept"
-                } else {
-                    state = "reject"
-                }
-
-            default:
-                state = "reject"
-            }
-        }
-
-        if state == "accept" {
-            print("Input is accepted by the Turing Machine.")
+if line.contains(where: { $0 != "0" && $0 != "1" }) {
+    print("Invalid input: expected a binary string.")
+} else {
+    // The canonical machine: a binary incrementer.  In q0 a 1 is rewritten to
+    // 0 and the head moves left (carry); a 0 becomes 1 and the machine halts;
+    // a blank becomes 1 (a new leading digit) and the machine halts.
+    var tape = Array(line)
+    var head = tape.count - 1
+    while true {
+        let symbol: Character = head >= 0 ? tape[head] : "_"
+        if symbol == "1" {
+            tape[head] = "0"
+            head -= 1
+        } else if symbol == "0" {
+            tape[head] = "1"
+            break
         } else {
-            print("Input is rejected by the Turing Machine.")
+            tape.insert("1", at: 0)
+            break
         }
     }
+    print("Initial tape: \(line)")
+    print("Final tape: \(String(tape))")
 }
-
-let input = "aabb"
-let tm = TuringMachine(input: input)
-tm.execute()
