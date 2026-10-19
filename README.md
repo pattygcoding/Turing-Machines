@@ -93,15 +93,16 @@ regenerates it first, and `npm run data` regenerates it on its own:
 ```sh
 npm run data      # tools/generate_dashboard.py -> public/dashboard-data.js
 npm run readmes   # tools/generate_language_readmes.py -> langs/*/README.md
+npm run links     # tools/generate_link_index.py -> docs/links.md
 npm run typecheck # vue-tsc --noEmit
 npm run build     # data + typecheck + vite build -> dist/
 npm run preview   # serve the production build
 ```
 
 The generated `public/dashboard-data.js` and the built `dist/` are ignored by
-git; both are recreated by the commands above. The per-language READMEs are
-generated too, but they are committed, so they only change when a language is
-added or a build command changes.
+git; both are recreated by the commands above. The per-language READMEs and
+`docs/links.md` are generated too, but they are committed, so they only change
+when a language is added or an address changes.
 
 ### Adding a language
 
@@ -117,7 +118,8 @@ added or a build command changes.
 4. Add a `LANGUAGE_FACTS` entry (tagline, toolchain, install commands, notes) to
    `tools/generate_language_readmes.py`.
 5. Run `npm run data` to refresh the showcase data, then `npm run readmes` to
-   write the new `langs/<Language>/README.md`.
+   write the new `langs/<Language>/README.md` and `npm run links` to refresh
+   `docs/links.md`.
 
 The generator only reads files that exist, so a missing folder or source file is
 skipped rather than advertised as a broken link.
@@ -131,6 +133,10 @@ switches to that implementation and writes the pretty path back with
 `history.replaceState`. A tab and scenario travel the same way, so
 `/python/output?scenario=basic` and `?lang=python&tab=output&scenario=basic` are
 equivalent. A hop counter stops a junk path from redirecting in a loop.
+
+[`docs/links.md`](docs/links.md) lists every resulting address - each
+implementation's source and console capture, the nine scenario captures, the
+GitHub folders - for anything that needs the links without opening the site.
 
 ### Deployment
 
@@ -168,11 +174,14 @@ tests/inputs/                   scripted stdin for each scenario
 tests/expected/                 golden stdout for each scenario
 tools/generate_dashboard.py     builds public/dashboard-data.js
 tools/generate_language_readmes.py  writes the per-language READMEs
-tools/generate_art.py           rebuilds logo.png and og-image.png
+tools/generate_link_index.py    writes docs/links.md (every address the site answers)
+tools/generate_art.py           rebuilds og-image.png (the favicon is the shared logo)
 src/                            Vue app: store, components, styles
+docs/links.md                   generated: every deep link, tab and scenario address
 public/                         static files copied verbatim into dist/
   404.html                      deep-link fallback for /<language-id>
-  CNAME, .nojekyll, logo.png, og-image.png
+  CNAME, .nojekyll, og-image.png
+  logo.png                      shared Patrick Goodwin favicon, copied from PG-Website
   dashboard-data.js             generated, not tracked
 index.html                      Vite entry: head metadata + mount point
 package.json                    data, dev, build, typecheck, preview scripts

@@ -10,6 +10,7 @@
     "scripts": {
         "data": "python tools/generate_dashboard.py",
         "readmes": "python tools/generate_language_readmes.py",
+        "links": "python tools/generate_link_index.py",
         "art": "python tools/generate_art.py",
         "start": "npm run data && vite",
         "dev": "vite",

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Generate the showcase's favicon and link-preview image.
+"""Generate the showcase's link-preview image.
 
-Both are committed under ``public/`` so the build copies them verbatim, and both
-are drawn from the same palette as the dashboard.  Pillow is the only dependency:
+It is committed under ``public/`` so the build copies it verbatim.  The favicon
+(``public/logo.png``) is deliberately *not* drawn here: it is the shared Patrick
+Goodwin logo, copied from the main site (``PG-Website/public/assets/images/logo.png``)
+so every pattygcoding.com project carries the same icon.  Keeping it out of this
+script means ``npm run art`` can never overwrite it.  Pillow is the only
+dependency:
 
     python -m pip install pillow
     python tools/generate_art.py
@@ -87,20 +91,6 @@ def tape(draw: ImageDraw.ImageDraw, left: int, top: int, cell: int, gap: int, sy
     )
 
 
-def build_logo() -> str:
-    size = 512
-    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((0, 0, size, size), radius=96, fill=NAVY)
-    draw.rounded_rectangle((0, 0, size, 14), radius=7, fill=MINT)
-    tape(draw, 46, 190, 66, 8, "aabbc")
-    face = font("consola.ttf", 30)
-    centred(draw, (0, 360, size, 410), "TURING MACHINES", face, MUTED)
-    output = os.path.join(PUBLIC, "logo.png")
-    image.save(output, optimize=True)
-    return output
-
-
 def build_og_image() -> str:
     width, height = 1200, 630
     image = Image.new("RGB", (width, height), NAVY)
@@ -128,8 +118,7 @@ def build_og_image() -> str:
 
 def main() -> int:
     os.makedirs(PUBLIC, exist_ok=True)
-    for path in (build_logo(), build_og_image()):
-        print("wrote " + path)
+    print("wrote " + build_og_image())
     return 0
 
 
