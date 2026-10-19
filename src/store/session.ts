@@ -52,7 +52,11 @@ function locationState(): LocationState {
     const tail = window.location.pathname.slice(APP_DIR.length).replace(/\/+$/, "");
     const parts = tail ? tail.split("/") : [];
     const pathTab = parts.length === 2 && /^(code|output)$/.test(parts[1]) ? parts[1] : "";
-    const first = (parts[0] === "index.html" ? "" : parts[0]).toLowerCase();
+    // The deployment root (`/`, and the `/index.html` the 404 shim links back to) names
+    // no implementation at all, so `parts` can be empty - read the segment defensively.
+    // Anything unrecognised (`index.html`, a junk slug) is not a known language either,
+    // so it falls through to `?lang=` and from there to the default implementation.
+    const first = (parts[0] ?? "").toLowerCase();
     const params = new URLSearchParams(window.location.search || "");
     const fromQuery = (params.get("lang") || "").toLowerCase();
     const candidate = data.knownLang(first) ? first : fromQuery;
